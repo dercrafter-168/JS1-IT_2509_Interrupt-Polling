@@ -1,11 +1,16 @@
-//dev branch
-
 /* mbed Microcontroller Library
  * Copyright (c) 2019 ARM Limited
  * SPDX-License-Identifier: Apache-2.0
  */
 
 #include "mbed.h"
+
+Ticker seg_switch;      //ticker
+
+PortOut seg_display(PortC, 0xFF);
+DigitalOut left = PC_11;
+DigitalOut right = PC_12;
+DigitalOut led = PA_5;
 
 constexpr int seg_numbers[10] = {       //segemt pattern from 0 to 9 in decimal
     0b00111111, // 0
@@ -22,47 +27,55 @@ constexpr int seg_numbers[10] = {       //segemt pattern from 0 to 9 in decimal
 
 constexpr std::chrono::milliseconds WAITING_TIME(5);        //wartezeit
 bool status;         //status welche segemt anzeige als nächstes dran kommnt
-
-EventQueue queue;       //event queue (busout & printf fix)
-Ticker seg_switch;      //ticker
-
-PortOut seg_display(PortC, 0xFF);
-BusOut seg_select(PC_11, PC_12, PA_5);   //busout für beide segmente & LED
+volatile int value = 0;
 
 void hw_init(){
     InterruptIn plus(PA_0);
     InterruptIn subtract(PA_6);
     InterruptIn reset(PA_10);
 
-    seg_select = 0b000;     //alle leds & segemte aus
     seg_display = 0b00000000;       //segement wert ist alles aus
     status = true;
+    left = 0;
+    right = 0;
+    led = 0;
 }
 
 void isr_Display() {        //ISR
-    int value = 0;
     if (value >= 0 && value <= 99) {
         if (status == 0) {
-            seg_select = 0b001;
+            left = 1;
+            right = 0;
+            led = 0;
             seg_display = seg_numbers[value % 10];
         } else {
-            seg_select = 0b010;
+            left = 0;
+            right = 1;
+            led = 0;
             seg_display = seg_numbers[(value / 10) % 10];
         }
     }else if (value >= 100 && value <= 199) {
         if (status == 0) {
-            seg_select = 0b001; 
+            left = 1;
+            right = 0;
+            led = 0;
             seg_display = seg_numbers[value % 10] | (1 << 7); 
         } else {
-            seg_select = 0b010;              
+            left = 0;
+            right = 1;
+            led = 0;              
             seg_display = seg_numbers[(value / 10) % 10] | (1 << 7);
         }
     }else if (value >= 200 && value <= 299) {
         if (status == 0) {
-            seg_select = 0b101;            
+            left = 1;
+            right = 0;
+            led = 1;          
             seg_display = seg_numbers[value % 10] | (1 << 7);  
         } else {
-            seg_select = 0b110;              
+            left = 0;
+            right = 1;
+            led = 1;           
             seg_display = seg_numbers[(value / 10) % 10] | (1 << 7); 
         }
     }
@@ -71,8 +84,10 @@ void isr_Display() {        //ISR
 
 int main(){
     hw_init();      // Initialisierung der Hardwarekomponenten
-    Thread event_thread;    // Erstellt ein neues Thread-Objekt.
-    event_thread.start(callback(&queue, &EventQueue::dispatch_forever));    // Startet den Thread und übergibt den Callback an die Event-Queue.
-    seg_switch.attach([] {queue.call(isr_Display);}, WAITING_TIME);     // Registrieren der `display` Funktion in der Event-Queue, die periodisch aufgerufen wird
-    while (true) {} // Endlosschleife, die den Hauptthread am Leben hält
+    seg_switch.attach(&isr_Display, 5ms);
+
+    while (true) {
+        ThisThread::sleep_for(10ms);
+    } // Endlosschleife, die den Hauptthread am Leben hält
+
 }
