@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#if 1
+#if 0
 
 #include "mbed.h"
 
