@@ -1,5 +1,4 @@
 #if 1
-
 #include "mbed.h"
 
 Ticker seg_switch;
@@ -10,7 +9,6 @@ DigitalOut seg_right(PC_12);
 InterruptIn plusButton(PA_10);
 InterruptIn subtractButton(PA_6);
 InterruptIn resetButton(PA_1);
-
 constexpr int seg_numbers[10] = {
     0b00111111,
     0b00000110,
@@ -23,7 +21,6 @@ constexpr int seg_numbers[10] = {
     0b01111111,
     0b01101111
 };
-
 constexpr int MIN_COUNT = 0;
 constexpr int MAX_COUNT = 99;
 constexpr std::chrono::milliseconds WAITING_TIME(10);
@@ -40,7 +37,6 @@ void enable_isr(int pISR_Code){
         resetButton.enable_irq();
     }
 }
-
 void isr_plus(){
     plusButton.disable_irq();
     if(counter >= MIN_COUNT && counter < MAX_COUNT){
@@ -48,7 +44,6 @@ void isr_plus(){
     }
     debounceTimeout.attach(callback([] { enable_isr(0); }), DEBOUNCE_TIME);
 }
-
 void isr_subtract(){
     subtractButton.disable_irq();
     if(counter > MIN_COUNT && counter <= MAX_COUNT){
@@ -56,13 +51,11 @@ void isr_subtract(){
     }
     debounceTimeout.attach(callback([] { enable_isr(1); }), DEBOUNCE_TIME);
 }
-
 void isr_reset(){
     resetButton.disable_irq();
     counter = 0;
     debounceTimeout.attach(callback([] { enable_isr(2); }), DEBOUNCE_TIME);
 }
-
 void isr_Display(){
     int value = counter;
     if (status == 0) {
@@ -76,14 +69,12 @@ void isr_Display(){
     }
     status = !status;
 }
-
 void hw_init(){
     seg_display = 0b00000000;
     status = true;
     seg_left = 0;
     seg_right = 0;
 }
-
 int main(){
     hw_init();
     seg_switch.attach(&isr_Display, WAITING_TIME);
@@ -101,5 +92,4 @@ int main(){
         ThisThread::sleep_for(WAITING_TIME);
     }
 }
-
 # endif
