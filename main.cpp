@@ -21,7 +21,7 @@
  * Copyright (c) 2025 dercrafter & all contributors
  * SPDX-License-Identifier: Apache-2.0
  */
-#if 1
+#if 0
 
 #include "mbed.h"
 
